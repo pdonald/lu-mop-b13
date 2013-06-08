@@ -15,8 +15,13 @@ int main() {
     pixel(1, 0, whitep);
     pixel(0, 1, whitep);
     setPixColor(whitep);
-    line(1, 1, 39, 19);
-    circle(20, 10, 5);
+    line(0, 0, 39, 19);
+    line(39, 0, 0, 19);
+    line(39, 19, 0, 0);
+    circle(20, 10, 7);
+    
+    //triangleFill(0, 0, 0, 19, 39, 0);
+    
     FrameShow();
     return 0;
 }
