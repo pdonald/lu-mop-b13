@@ -49,7 +49,7 @@ getPixelAddr:
   
   mul r5, r2, r1            @ index = width * y
   add r5, r5, r0            @ index = width * y + x
-  
+
   add r0, r4, r5, lsl #2    @ frameBuffer[index]
   bx lr
 
@@ -79,12 +79,9 @@ line:
   @ r2 = x1
   @ r3 = y1
   
-  @ 4 params + 5 locals + currentColor = 10
-  @ r4, r5, r6, r7,  r8, r10, r11
-  
   push {lr}
   
-  mov r6, #1       @ sx
+  mov r6, #1        @ sx
   subs r4, r2, r0   @ dx = x1-x0
   mvnlt r4, r4      @ dx = abs(dx)
   addlt r4, r4, #1  @ dx = abs(dx)
@@ -109,16 +106,7 @@ line_loop:
   beq line_done
   
   add r12, r8, r8    @ e2 = 2 * err
-  
-  push {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,lr}
-  mov r4, r0
-  mov r5, r5
-  ldr r6, =format_a
-  ldr r0, [r6]
-  mov r1, r4
-  @bl printf
-  pop {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,lr}
-  
+
   cmn r12, r5        @ if (e2 > -dy)
   subgt r8, r8, r5   @ err -= dy
   addgt r0, r0, r6   @ x0 += sx
@@ -135,10 +123,10 @@ line_loop:
   b line_loop
 
 line_plot:
-  push {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,lr}
+  push {r0,r1,r2,r3,r4,r5,r6,r7,r8,r10,lr}
   mov r2, r10
   bl pixel
-  pop {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,lr}
+  pop {r0,r1,r2,r3,r4,r5,r6,r7,r8,r10,lr}
   bx lr
   
 line_plot_and_finish:
@@ -149,43 +137,46 @@ line_done:
   bx lr
 
 triangleFill:
+  @ r0 = x1
+  @ r1 = y1
+  @ r2 = x2
+  @ r3 = y2
+  @ r4 = x3
+  @ r5 = y3
+
+  @ line (x1,y1) => (x2,y2)
   push {r0,r1,r2,r3,lr}
   bl line
   pop {r0,r1,r2,r3,lr}
   
-  ldr r4, [sp]
-  ldr r5, [sp, #4]
+  ldr r4, [sp]      @ x3
+  ldr r5, [sp, #4]  @ y3
   
+  @ line (x1,y1) => (x3,y3)
   push {r0,r1,r2,r3,r4,r5,lr}
   mov r2, r4
   mov r3, r5
   bl line
   pop {r0,r1,r2,r3,r4,r5,lr}
   
+  @ line (x3,y3) => (x2,y2)
   push {r0,r1,r2,r3,r4,r5,lr}
   mov r0, r4
   mov r1, r5
   bl line
   pop {r0,r1,r2,r3,r4,r5,lr}
   
-  add r6, r0, r2   @ x1 + x2
-  add r6, r6, r4   @ x1 + x2 + x3
-  add r7, r1, r3   @ y1 + y2
-  add r7, r7, r5   @ y1 + y2 + y3
+  @ triangle center
+  add r6, r0, r2          @ x1 + x2
+  add r6, r6, r4          @ x1 + x2 + x3
+  add r7, r1, r3          @ y1 + y2
+  add r7, r7, r5          @ y1 + y2 + y3
   ldr r8, =0x55555556
-  umull r10, r6, r6, r8  @ r6 = (x1+x2+x3)/3
-  umull r10, r7, r7, r8  @ r7 = (y1+y2+y3)/3
+  umull r10, r0, r6, r8   @ r0 = (x1+x2+x3)/3
+  umull r10, r1, r7, r8   @ r1 = (y1+y2+y3)/3
   
-  @push {r0,r1,r2,r3,r4,r5,r6,r7,lr}
-  @mov r0, r6
-  @mov r1, r7
-  @ldr r2, currentColor_word
-  @bl pixel
-  @pop {r0,r1,r2,r3,r4,r5,r6,r7,lr}
-  
+  @ flood fill from the center
   push {lr}
-  mov r0, r6
-  mov r1, r7
   ldr r2, currentColor_word
   bl floodfill
   pop {lr}
@@ -196,36 +187,43 @@ floodfill:
   @ r0 = x
   @ r1 = y
   @ r2 = target color
-
-  push {r0,r1,r2,r3,r4,r5,r6,r7,lr}
-  bl FrameBufferGetWidth    @ r0 = width
-  mov r4, r0
-  pop {r0,r1,r2,r3,r4,r5,r6,r7,lr}
- 
-  push {r0,r1,r2,r3,r4,r5,r6,r7,lr}
-  bl FrameBufferGetAddress  @ r0 = frameBuffer
-  mov r5, r0
-  pop {r0,r1,r2,r3,r4,r5,r6,r7,lr}
-  
-  mul r6, r4, r1          @ index = width * y
-  add r6, r6, r0          @ index = width * y + x
-  add r7, r5, r6, lsl #2  @ frameBuffer[index]
+  push {r0,r1,r2,lr}
+  bl getPixelAddr     @ r0 = frameBuffer[index]
+  mov r3, r0          @ frameBuffer[index] 
+  pop {r0,r1,r2,lr}
+  cmp r3, #-1
+  bxeq lr             @ out of bounds
   
   @ TODO: kas ir, ja operācija?
-  cmp r2, r7  @ target color, node color
+  ldr r4, [r2]        @ target color
+  ldr r5, [r3]        @ node color
+  cmp r5, r4
   bxeq lr
   
-  push {r0,r1,r2,r3,r4,r5,r6,r7,lr}
+  push {r0,r1,r2,lr}
   bl pixel
-  pop {r0,r1,r2,r3,r4,r5,r6,r7,lr}
+  pop {r0,r1,r2}
   
-  push {r0,r1,r2,r3,r4,r5,r6,r7,lr}
+  push {r0,r1}
   add r1, r1, #1  @ x, y+1
   bl floodfill
-  pop {r0,r1,r2,r3,r4,r5,r6,r7,lr}
+  pop {r0,r1}
   
+  push {r0,r1}
+  add r0, r0, #1  @ x+1, y
+  bl floodfill
+  pop {r0,r1}
+  
+  push {r0,r1}
+  sub r0, r0, #1  @ x-1, y
+  bl floodfill
+  pop {r0,r1}
+  
+  sub r1, r1, #1  @ x, y-1
+  bl floodfill
+  
+  pop {lr}
   bx lr
-  
 
 circle:
   @ r0 = x0
@@ -233,7 +231,7 @@ circle:
   @ r2 = radius
   
   cmp r2, #0
-  bxlt lr     @ radius < 0
+  bxlt lr         @ radius < 0
   
   push {lr}
   
@@ -291,21 +289,27 @@ circle_loop:
   subge r6, r6, r4  @ raidusError += 1+y+y -x
   subge r6, r6, r4  @ raidusError += 1+y+y -x-x
   
-  cmp r4, r5 @ x, y
-  bge circle_loop
+  cmp r4, r5        @ x, y
+  bge circle_loop   @ x >= y
 
-circle_done:
   pop {lr}
   bx lr
 
 circle_plot:
-  push {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,lr}
+  push {r4,r5,r6,r7,r8,r10,lr}
   mov r2, r10
   bl pixel
-  pop {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,lr}
+  pop {r4,r5,r6,r7,r8,r10,lr}
   bx lr
 
-.data
-format: .asciz "%u\n"
-
-format_a: .word format
+@.data
+@format: .asciz "%u\n"
+@format_a: .word format
+@push {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,lr}
+@mov r4, r0
+@mov r5, r5
+@ldr r6, =format_a
+@ldr r0, [r6]
+@mov r1, r4
+@bl printf
+@pop {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,lr}

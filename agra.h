@@ -35,5 +35,17 @@ int FrameBufferGetHeight();
 // Kadra izvadîðana uz "displeja iekârtas".
 int FrameShow();
 
-#define FrameWidth  40
-#define FrameHeight  20
+#define FRAME_WIDTH  40
+#define FRAME_HEIGHT 20
+
+#define COLOR_BLACK      " "
+#define COLOR_WHITE      "*"
+#define COLOR_RED        "R"
+#define COLOR_GREEN      "G"
+#define COLOR_BLUE       "B"
+#define COLOR_GREEN_BLUE "C"
+#define COLOR_RED_BLUE   "M"
+#define COLOR_GREEN_RED  "Y"
+#define COLOR_GRAY       "?"
+
+#define COLOR_DEPTH 0x3ff
