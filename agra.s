@@ -18,44 +18,60 @@ setPixColor:
   ldr r2, currentColor_word  @ currentColor
   str r1, [r2]               @ currentColor = colorop
   bx lr
- 
-pixel:
-  cmp r0, r0  @ x
-  bxlt lr     @ x < 0
-  cmp r1, r1  @ y
-  bxlt lr     @ y < 0
+
+getPixelAddr:
+  @ r0 = x
+  @ r1 = y
+
+  cmp r0, r0             @ x
+  blt getPixelAddr_oob   @ x < 0
+  cmp r1, r1             @ y
+  blt getPixelAddr_oob   @ y < 0
   
-  mov r4, lr  @ lr
-  mov r5, r0  @ x
-  mov r6, r1  @ y
-  mov r7, r2  @ colorop
-  
-  push {r4,r5,r6,r7,r8}
+  push {r0,r1,lr}
   bl FrameBufferGetWidth    @ r0 = width
-  pop {r4,r5,r6,r7,r8}
-  cmp r0, r5                @ width un x
-  bxlt r4                   @ x >= width
-  mov r8, r0                @ width
+  mov r2, r0                @ width
+  pop {r0,r1,lr}
+  cmp r2, r0                @ width un x
+  blt getPixelAddr_oob      @ x >= width
   
-  push {r4,r5,r6,r7,r8}
+  push {r0,r1,r2,lr}
   bl FrameBufferGetHeight   @ r0 = height
-  pop {r4,r5,r6,r7,r8}
-  cmp r0, r6                @ height un y
-  bxlt r4                   @ y >= height
+  mov r3, r0                @ height
+  pop {r0,r1,r2,lr}
+  cmp r3, r1                @ height un y
+  blt getPixelAddr_oob      @ y >= height
   
-  push {r4,r5,r6,r7,r8}
+  push {r0,r1,r2,lr}
   bl FrameBufferGetAddress  @ r0 = frameBuffer
-  pop {r4,r5,r6,r7,r8}
-  mul r6, r8, r6            @ index = width * y
-  add r6, r6, r5            @ index = width * y + x
+  mov r4, r0                @ frameBuffer
+  pop {r0,r1,r2,lr}
   
-  add r0, r0, r6, lsl #2    @ frameBuffer[index]
-  ldr r1, [r7]              @ colorop
-  str r1, [r0]              @ frameBuffer[index] = colorop
+  mul r5, r2, r1            @ index = width * y
+  add r5, r5, r0            @ index = width * y + x
   
-  @TODO: ņemt vērā op
+  add r0, r4, r5, lsl #2    @ frameBuffer[index]
+  bx lr
+
+getPixelAddr_oob:
+  mov r0, #-1
+  bx lr
+ 
+pixel: @TODO: ņemt vērā op
+  @ r0 = x
+  @ r1 = y
+  @ r2 = colorop
   
-  bx r4
+  push {r2,lr}
+  bl getPixelAddr    @ r0 = frameBuffer[index]
+  pop {r2,lr}
+  
+  cmp r0, #-1
+  bxeq lr            @ out of bounds
+  
+  ldr r1, [r2]       @ colorop
+  str r1, [r0]       @ frameBuffer[index] = colorop
+  bx lr
 
 line:
   @ r0 = x0
@@ -291,4 +307,5 @@ circle_plot:
 
 .data
 format: .asciz "%u\n"
+
 format_a: .word format
