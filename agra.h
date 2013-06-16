@@ -2,11 +2,20 @@
 //    r,g,b ir sarkanâ, zaïâ, un zilâ krâsu komponentes, 
 //    op  ir operâcija, kas jâizpilda ðim pikselim ar fona krâsu. 0 - nozîmç rakstît pâri.
 typedef struct {
-    int r  : 10;
-    int g  : 10;
-    int b  : 10;
-    int op: 2;
+    unsigned int r  : 10;
+    unsigned int g  : 10;
+    unsigned int b  : 10;
+    unsigned int op : 2;
 } pixcolor_t;
+ 
+// Operâcijas iespçjas pikselim ar fona (FrameBuffer) krâsu.
+// Izmantots pixcolor_t struktûras laukâ "op".
+typedef enum {
+    PIXEL_COPY = 0,
+    PIXEL_AND  = 1,
+    PIXEL_OR   = 2,
+    PIXEL_XOR  = 3
+} pixop_t;
  
 // Funkcija krasas (un operâcijas) uztâdîðanai
 void setPixColor( pixcolor_t * color_op);
@@ -46,6 +55,6 @@ int FrameShow();
 #define COLOR_GREEN_BLUE "C"
 #define COLOR_RED_BLUE   "M"
 #define COLOR_GREEN_RED  "Y"
-#define COLOR_GRAY       "?"
+#define COLOR_GRAY       "*"
 
 #define COLOR_DEPTH 0x3ff

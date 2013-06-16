@@ -1,7 +1,7 @@
 # TODO: library
 
 CC = arm-linux-gnueabi-gcc
-CFLAGS = -g -O0 -Wall -static -std=c99
+CFLAGS = -g -O3 -Wall -static -std=c99
 
 QEMU = qemu-arm-static
 

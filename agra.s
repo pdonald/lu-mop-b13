@@ -1,3 +1,5 @@
+@ todo push
+
 .text
 
 .extern FrameBufferGetAddress
@@ -22,42 +24,48 @@ setPixColor:
 getPixelAddr:
   @ r0 = x
   @ r1 = y
-
-  cmp r0, r0             @ x
-  blt getPixelAddr_oob   @ x < 0
-  cmp r1, r1             @ y
-  blt getPixelAddr_oob   @ y < 0
   
-  push {r0,r1,lr}
+  cmp r0, r0                @ x
+  blt getPixelAddr_oob      @ x < 0
+  cmp r1, r1                @ y
+  blt getPixelAddr_oob      @ y < 0
+  
+  push {r4,r5,r6}
+  mov r4, r0                @ x
+  mov r5, r1                @ y
+  
+  push {lr}
   bl FrameBufferGetWidth    @ r0 = width
-  mov r2, r0                @ width
-  pop {r0,r1,lr}
-  cmp r2, r0                @ width un x
-  blt getPixelAddr_oob      @ x >= width
+  pop {lr}
+  cmp r0, r4                @ width un x
+  blt getPixelAddr_oob_pop  @ x >= width
+  mov r6, r0                @ width
   
-  push {r0,r1,r2,lr}
+  push {lr}
   bl FrameBufferGetHeight   @ r0 = height
-  mov r3, r0                @ height
-  pop {r0,r1,r2,lr}
-  cmp r3, r1                @ height un y
-  blt getPixelAddr_oob      @ y >= height
+  pop {lr}
+  cmp r0, r5                @ height un y
+  blt getPixelAddr_oob_pop  @ y >= height
   
-  push {r0,r1,r2,lr}
+  push {lr}
   bl FrameBufferGetAddress  @ r0 = frameBuffer
-  mov r4, r0                @ frameBuffer
-  pop {r0,r1,r2,lr}
+  pop {lr}
   
-  mul r5, r2, r1            @ index = width * y
-  add r5, r5, r0            @ index = width * y + x
-
-  add r0, r4, r5, lsl #2    @ frameBuffer[index]
+  mul r1, r6, r5            @ index = width * y
+  add r1, r1, r4            @ index = width * y + x
+  add r0, r0, r1, lsl #2    @ frameBuffer[index]
+  
+  pop {r4,r5,r6}
   bx lr
+
+getPixelAddr_oob_pop:
+  pop {r4,r5,r6}
 
 getPixelAddr_oob:
   mov r0, #-1
   bx lr
- 
-pixel: @TODO: ņemt vērā op
+
+pixel:
   @ r0 = x
   @ r1 = y
   @ r2 = colorop
@@ -65,11 +73,29 @@ pixel: @TODO: ņemt vērā op
   push {r2,lr}
   bl getPixelAddr    @ r0 = frameBuffer[index]
   pop {r2,lr}
-  
   cmp r0, #-1
   bxeq lr            @ out of bounds
   
   ldr r1, [r2]       @ colorop
+  lsr r3, r1, #30    @ op
+  
+  cmp r3, #0         @ COPY
+  beq pixel_end
+
+  ldr r2, [r0]       @ prev color
+  
+  cmp r3, #1         @ AND
+  andeq r1, r1, r2
+  beq pixel_end
+  
+  cmp r3, #2         @ OR
+  orreq r1, r1, r2
+  beq pixel_end
+  
+  cmp r3, #3         @ XOR
+  eoreq r1, r1, r2
+
+pixel_end:    
   str r1, [r0]       @ frameBuffer[index] = colorop
   bx lr
 
@@ -79,7 +105,7 @@ line:
   @ r2 = x1
   @ r3 = y1
   
-  push {lr}
+  push {r4,r5,r6,r7,r8,r10,r12,lr}
   
   mov r6, #1        @ sx
   subs r4, r2, r0   @ dx = x1-x0
@@ -123,17 +149,17 @@ line_loop:
   b line_loop
 
 line_plot:
-  push {r0,r1,r2,r3,r4,r5,r6,r7,r8,r10,lr}
+  push {r0,r1,r2,r3,lr}
   mov r2, r10
   bl pixel
-  pop {r0,r1,r2,r3,r4,r5,r6,r7,r8,r10,lr}
+  pop {r0,r1,r2,r3,lr}
   bx lr
   
 line_plot_and_finish:
   bl line_plot
   
 line_done:
-  pop {lr}
+  pop {r4,r5,r6,r7,r8,r10,r12,lr}
   bx lr
 
 triangleFill:
@@ -233,7 +259,7 @@ circle:
   cmp r2, #0
   bxlt lr         @ radius < 0
   
-  push {lr}
+  push {r4,r5,r6,r7,r8,r10}
   
   mov r4, r2      @ x = radius
   mov r5, #0      @ y = 0
@@ -247,35 +273,43 @@ circle:
 circle_loop:
   add r0, r4, r7  @ x + x0
   add r1, r5, r8  @ y + y0
-  bl circle_plot
+  mov r2, r10
+  push {lr}; bl pixel; pop {lr}
   
   add r0, r5, r7  @ y + x0
   add r1, r4, r8  @ x + y0
-  bl circle_plot
+  mov r2, r10
+  push {lr}; bl pixel; pop {lr}
   
   sub r0, r7, r4  @ x0 - x
   add r1, r5, r8  @ y + y0
-  bl circle_plot
+  mov r2, r10
+  push {lr}; bl pixel; pop {lr}
   
   sub r0, r7, r5  @ x0 - y
   add r1, r4, r8  @ x + y0
-  bl circle_plot
+  mov r2, r10
+  push {lr}; bl pixel; pop {lr}
   
   sub r0, r7, r4  @ x0 - x
   sub r1, r8, r5  @ y0 - y
-  bl circle_plot
+  mov r2, r10
+  push {lr}; bl pixel; pop {lr}
   
   sub r0, r7, r5  @ x0 - y
   sub r1, r8, r4  @ y0 - x
-  bl circle_plot
+  mov r2, r10
+  push {lr}; bl pixel; pop {lr}
 
   add r0, r4, r7  @ x + x0
   sub r1, r8, r5  @ y0 - y
-  bl circle_plot
+  mov r2, r10
+  push {lr}; bl pixel; pop {lr}
       
   add r0, r5, r7  @ y + x0
   sub r1, r8, r4  @ y0 - x
-  bl circle_plot
+  mov r2, r10
+  push {lr}; bl pixel; pop {lr}
   
   add r5, r5, #1   @ y++
   
@@ -292,24 +326,20 @@ circle_loop:
   cmp r4, r5        @ x, y
   bge circle_loop   @ x >= y
 
-  pop {lr}
+  pop {r4,r5,r6,r7,r8,r10}
   bx lr
 
-circle_plot:
-  push {r4,r5,r6,r7,r8,r10,lr}
-  mov r2, r10
-  bl pixel
-  pop {r4,r5,r6,r7,r8,r10,lr}
-  bx lr
+.data
+format: .asciz "%x\n"
+format_a: .word format
 
-@.data
-@format: .asciz "%u\n"
-@format_a: .word format
-@push {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,lr}
-@mov r4, r0
-@mov r5, r5
-@ldr r6, =format_a
-@ldr r0, [r6]
-@mov r1, r4
-@bl printf
-@pop {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,lr}
+
+  
+@  push {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,lr}
+@  @mov r4, r1
+@  @mov r5, r5
+@  ldr r6, =format_a
+@  ldr r0, [r6]
+@  mov r1, r4
+@  bl printf
+@  pop {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,lr}
