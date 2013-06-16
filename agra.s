@@ -240,66 +240,71 @@ triangleFill_loop:
   bl line
   pop {r0-r3,lr}
   
-  @ 0 4 8 12 16 20       24 28 32 36 40 44
-  ldr r4, [sp, #40]  @ e1   
-  ldr r5, [sp, #44]  @ changed1
-  cmp r5, #1
-  ldreq r6, [sp, #32]  @ sx1
-  ldrne r6, [sp, #36]  @ sy1
-  ldr r7, [sp, #24]    @ dx1
-  ldr r8, [sp, #28]    @ dy1
+  ldr r4, [sp, #24]  @ dx1
+  ldr r5, [sp, #28]  @ dy1
+  ldr r6, [sp, #32]  @ sx1
+  ldr r7, [sp, #36]  @ sy1
+  ldr r8, [sp, #40]  @ e1
+  ldr r10, [sp, #44] @ changed1
   
-  cmp r4, #0
+  push {r0-r12,lr}
+  mov r4, r5
+  ldr r6, =format_a
+  ldr r0, [r6]
+  mov r1, r4
+  bl printf
+  pop {r0-r12,lr}
+  
+  cmp r8, #0
   blt triangleFill_while_e1_done
 
 triangleFill_while_e1:
-  cmp r5, #1
+  cmp r10, #1
   addeq r0, r0, r6   @ x1 += sx1
-  addne r1, r1, r6   @ y1 += sy1
-  sub r4, r4, r7     @ e1 -= dx1
-  subs r4, r4, r7    @ e1 -= 2*dx1
+  addne r1, r1, r7   @ y1 += sy1
+  sub r8, r8, r4     @ e1 -= dx1
+  subs r8, r8, r4    @ e1 -= 2*dx1
   bge triangleFill_while_e1
 
 triangleFill_while_e1_done:
-  cmp r5, #1
-  addeq r1, r1, r6
-  addne r0, r0, r6
+  cmp r10, #1
+  addeq r1, r1, r7  @ y1 += sy1
+  addne r0, r0, r6  @ x1 += sx1
   
-  add r4, r4, r8     @ e1 += dy1
-  add r4, r4, r8     @ e1 += 2*dy1
-  str r4, [sp, #40]
+  add r8, r8, r5     @ e1 += dy1
+  add r8, r8, r5     @ e1 += 2*dy1
+  str r8, [sp, #40]
 
   cmp r3, r1
   beq triangleFill_while_yy_done
 
-  ldr r4, [sp, #16]   @ e2
-  ldr r5, [sp, #20]   @ changed2
-  cmp r4, #0
-  ldreq r6, [sp, #8]  @ sx2
-  ldrne r6, [sp, #12] @ sy2
-  ldr r7, [sp, #0]    @ dx2
-  ldr r8, [sp, #4]    @ dy2
+  ldr r4, [sp, #0]  @ dx2
+  ldr r5, [sp, #4]  @ dy2
+  ldr r6, [sp, #8]  @ sx2
+  ldr r7, [sp, #12]  @ sy2
+  ldr r8, [sp, #16]  @ e2
+  ldr r10, [sp, #20] @ changed2
 
 triangleFill_while_yy:
-  cmp r4, #0
+  cmp r8, #0
   blt triangleFill_while_e2_done
 
 triangleFill_while_e2:
-  cmp r5, #1
+  cmp r10, #1
   addeq r2, r2, r6   @ x2 += sx2
-  addne r3, r3, r6   @ y2 += sy2
-  sub r4, r4, r7     @ e2 -= dx2
-  subs r4, r4, r7    @ e2 -= 2*dx2
+  addne r3, r3, r7   @ y2 += sy2
+  sub r8, r8, r4     @ e2 -= dx2
+  subs r8, r8, r4    @ e2 -= 2*dx2
   bge triangleFill_while_e2
 
 triangleFill_while_e2_done:
-  cmp r5, #1
-  addeq r3, r3, r6
-  addne r2, r2, r6
+  cmp r10, #1
+  addeq r3, r3, r7   @ y2 += sy2
+  addne r2, r2, r6   @ x2 += sx2
   
-  add r4, r4, r8     @ e2 += dy2
-  add r4, r4, r8     @ e2 += 2*dy2
-  str r4, [sp, #40]
+  add r8, r8, r5     @ e2 += dy2
+  add r8, r8, r5     @ e2 += 2*dy2
+  str r8, [sp, #16]
   
   cmp r3, r1
   bne triangleFill_while_yy
@@ -308,7 +313,7 @@ triangleFill_while_yy_done:
   subs r12, r12, #1       @ i--
   bge triangleFill_loop   @ i >= 0
   
-triangleFill_done:  
+triangleFill_done:
   pop {r4-r8,r10}
   pop {r4-r8,r10}
   
