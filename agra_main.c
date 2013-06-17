@@ -32,10 +32,14 @@ int main() {
     
     setPixColor(blue);
     //line(0, 0, 39, 19);
+    //line(50, 19, 0, 0);
+    //line(0,0,50,1);
     
     setPixColor(green);
     //triangleFill(0, 19, 20, 19, 0, 10);
-    triangleFill(0, 10, 0, 19, 20, 19);
+    //triangleFill(0, 10, 0, 19, 20, 19);
+    //triangleFill(0, 0, 0, 19, 39, 19);
+    triangleFill(1, 0, 0, 19, 30, 19);
     //triangleFill(15, 0, 3, 10, 37, 10);
     //triangleFill(1, 1, 20, 1, 10, 10);
     //triangleFill(10, 10, 1, 1, 20, 1);

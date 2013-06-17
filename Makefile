@@ -1,5 +1,3 @@
-# TODO: library
-
 CC = arm-linux-gnueabi-gcc
 CFLAGS = -g -O3 -Wall -static -std=c99
 

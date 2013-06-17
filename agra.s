@@ -35,15 +35,15 @@ getPixelAddr:
   push {lr}
   bl FrameBufferGetWidth    @ r0 = width
   pop {lr}
-  cmp r0, r4                @ width un x
-  blt getPixelAddr_oob_pop  @ x >= width
+  cmp r4, r0                @ x un width
+  bge getPixelAddr_oob_pop  @ x >= width
   mov r6, r0                @ width
   
   push {lr}
   bl FrameBufferGetHeight   @ r0 = height
   pop {lr}
-  cmp r0, r5                @ height un y
-  blt getPixelAddr_oob_pop  @ y >= height
+  cmp r5, r0                @ y un height
+  bge getPixelAddr_oob_pop  @ y >= height
   
   push {lr}
   bl FrameBufferGetAddress  @ r0 = frameBuffer
@@ -171,10 +171,10 @@ triangleFill:
   @ r4 = x3
   @ r5 = y3
   
-  push {r4-r12,lr}
+  push {r4-r7,lr}
   
-  ldr r4, [sp, #40]  @ x3
-  ldr r5, [sp, #44]  @ y3
+  ldr r4, [sp, #20]  @ x3
+  ldr r5, [sp, #24]  @ y3
   
   @ if y1>y2 then swap(x1,y1; x2;y2)
   cmp r1, r3
@@ -202,10 +202,6 @@ triangleFill:
   movgt r1, r3
   movgt r2, r6
   movgt r3, r7
-  
-    
-  
-
   
   cmp r1, r3
   beq triangleFill_y1y2
@@ -255,29 +251,19 @@ triangleFill_split:
   mov r1, r6
   mov r2, r7
   bl division
-  mov r8, r0
+  mov r6, r0
   pop {r0-r3,lr}
-  
-  push {r0-r12,lr}
-  mov r4, r8
-  mov r5, r7
-  ldr r6, =format_a
-  ldr r0, [r6]
-  mov r1, r4
-  mov r2, r5
-  bl printf
-  pop {r0-r12,lr}
 
   push {r0-r3}
   sub sp, sp, #8
-  str r8, [sp, #0]
+  str r6, [sp, #0]
   str r3, [sp, #4]
   bl triangleFillFlatSide
   add sp, sp, #8
   pop {r0-r3}
   
   sub sp, sp, #8
-  str r8, [sp, #0]
+  str r6, [sp, #0]
   str r3, [sp, #4]
   mov r0, r4
   mov r1, r5
@@ -287,7 +273,7 @@ triangleFill_split:
   b triangleFill_done
 
 triangleFill_done:
-  pop {r4-r12,lr}
+  pop {r4-r7,lr}
   bx lr
 
 triangleFillFlatSide:
@@ -298,7 +284,7 @@ triangleFillFlatSide:
   @ sp = x3
   @ sp = y3
   
-  push {r4-r12}
+  push {r4-r8,r10,r12}
   
   subs r4, r2, r0   @ dx1 = x2-x1
   mvnlt r4, r4      @ dx1 = abs(dx2)
@@ -306,8 +292,6 @@ triangleFillFlatSide:
   mov r6, #0        @ sx1
   movgt r6, #1      @ sx1
   movlt r6, #-1     @ sx1
-  
-  mov r12, r4       @ i = dx1
   
   subs r5, r3, r1   @ dy1 = y2-y1
   mvnlt r5, r5      @ dy1 = abs(dy1)
@@ -327,8 +311,10 @@ triangleFillFlatSide:
   movgt r10, #1
   movle r10, #0
   
-  ldr r2, [sp, #36]  @ x3
-  ldr r3, [sp, #40]  @ y3
+  mov r12, r4       @ i = dx1
+  
+  ldr r2, [sp, #28]  @ x3
+  ldr r3, [sp, #32]  @ y3
   
   push {r4-r8,r10}  @ dx1, dy1, sx1, sy1, e1, changed1
   
@@ -373,6 +359,8 @@ triangleFillFlatSide_loop:
   ldr r7, [sp, #36]  @ sy1
   ldr r8, [sp, #40]  @ e1
   ldr r10, [sp, #44] @ changed1
+  
+  
   
   cmp r8, #0
   blt triangleFillFlatSide_while_e1_done
@@ -429,14 +417,14 @@ triangleFillFlatSide_while_e2_done:
   bne triangleFillFlatSide_while_yy
 
 triangleFillFlatSide_while_yy_done:  
-  subs r12, r12, #1       @ i--
+  subs r12, r12, #1               @ i--
   bge triangleFillFlatSide_loop   @ i >= 0
   
 triangleFillFlatSide_done:
   pop {r4-r8,r10}
   pop {r4-r8,r10}
   
-  pop {r4-r12}
+  pop {r4-r8,r10,r12}
   bx lr
 
 circle:
@@ -518,40 +506,25 @@ circle_loop:
   bx lr
 
 division:
- cmp r2, #0
- beq division_end
+  cmp r2, #0
+  beq division_end
 
- mov r0, #0 
- mov r3, #1 
+  mov r0, #0 
+  mov r3, #1 
                 
 division_start:
- cmp r2, r1
- MOVLS R2,R2,LSL#1
- MOVLS R3,R3,LSL#1
- bls division_start
+  cmp r2, r1
+  movls R2,R2,LSL#1
+  movls R3,R3,LSL#1
+  bls division_start
 
 division_next:
- CMP       R1,R2     
- SUBCS     R1,R1,R2  
- ADDCS     R0,R0,R3  
- MOVS      R3,R3,LSR#1    
- MOVCC     R2,R2,LSR#1    
- BCC       division_next  
+  cmp R1,R2     
+  subcs R1,R1,R2  
+  addcs R0,R0,R3  
+  movs R3,R3,LSR#1    
+  movcc R2,R2,LSR#1    
+  bcc division_next  
 
 division_end:
- bx lr
-
-.data
-format: .asciz "%d %d\n"
-format_a: .word format
-
-
-  
-@  push {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,lr}
-@  @mov r4, r1
-@  @mov r5, r5
-@  ldr r6, =format_a
-@  ldr r0, [r6]
-@  mov r1, r4
-@  bl printf
-@  pop {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,lr}
+  bx lr
