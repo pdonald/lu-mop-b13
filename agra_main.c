@@ -35,7 +35,12 @@ int main() {
     
     setPixColor(green);
     //triangleFill(0, 19, 20, 19, 0, 10);
-    triangleFill(15, 0, 3, 10, 37, 10);
+    triangleFill(0, 10, 0, 19, 20, 19);
+    //triangleFill(15, 0, 3, 10, 37, 10);
+    //triangleFill(1, 1, 20, 1, 10, 10);
+    //triangleFill(10, 10, 1, 1, 20, 1);
+    //triangleFill(20, 0, 0, 10, 30, 15);
+    //triangleFill(30, 15, 0, 10, 20, 0);
     
     setPixColor(red);
     //circle(20, 10, 5);

@@ -171,6 +171,133 @@ triangleFill:
   @ r4 = x3
   @ r5 = y3
   
+  push {r4-r12,lr}
+  
+  ldr r4, [sp, #40]  @ x3
+  ldr r5, [sp, #44]  @ y3
+  
+  @ if y1>y2 then swap(x1,y1; x2;y2)
+  cmp r1, r3
+  movgt r6, r0
+  movgt r7, r1
+  movgt r0, r2
+  movgt r1, r3
+  movgt r2, r6
+  movgt r3, r7
+  
+  @ if y2>y3 then swap(x2,y2; x3;y3)
+  cmp r3, r5
+  movgt r6, r2
+  movgt r7, r3
+  movgt r2, r4
+  movgt r3, r5
+  movgt r4, r6
+  movgt r5, r7
+  
+  @ if y1>y2 then swap(x1,y1; x2;y2)
+  cmp r1, r3
+  movgt r6, r0
+  movgt r7, r1
+  movgt r0, r2
+  movgt r1, r3
+  movgt r2, r6
+  movgt r3, r7
+  
+    
+  
+
+  
+  cmp r1, r3
+  beq triangleFill_y1y2
+  
+  cmp r3, r5
+  beq triangleFill_y2y3
+  
+  b triangleFill_split
+
+@ bottom-flat
+triangleFill_y2y3:
+  sub sp, sp, #8
+  str r4, [sp, #0]
+  str r5, [sp, #4]
+  bl triangleFillFlatSide
+  add sp, sp, #8
+  b triangleFill_done
+
+@ top-flat
+triangleFill_y1y2:
+  sub sp, sp, #8
+  str r2, [sp, #0]
+  str r3, [sp, #4]
+  mov r2, r0
+  mov r3, r1
+  mov r0, r4
+  mov r1, r5
+  bl triangleFillFlatSide
+  add sp, sp, #8
+  b triangleFill_done
+
+@ two triangles
+triangleFill_split:
+  @ x
+  sub r6, r3, r5
+  mul r6, r0, r6
+  sub r7, r1, r3
+  mul r7, r4, r7
+  adds r6, r6, r7
+  mvnlt r6, r6
+  addlt r6, r6, #1
+  subs r7, r1, r5
+  mvnlt r7, r7
+  addlt r7, r7, #1
+  
+  push {r0-r3,lr}
+  mov r1, r6
+  mov r2, r7
+  bl division
+  mov r8, r0
+  pop {r0-r3,lr}
+  
+  push {r0-r12,lr}
+  mov r4, r8
+  mov r5, r7
+  ldr r6, =format_a
+  ldr r0, [r6]
+  mov r1, r4
+  mov r2, r5
+  bl printf
+  pop {r0-r12,lr}
+
+  push {r0-r3}
+  sub sp, sp, #8
+  str r8, [sp, #0]
+  str r3, [sp, #4]
+  bl triangleFillFlatSide
+  add sp, sp, #8
+  pop {r0-r3}
+  
+  sub sp, sp, #8
+  str r8, [sp, #0]
+  str r3, [sp, #4]
+  mov r0, r4
+  mov r1, r5
+  bl triangleFillFlatSide
+  add sp, sp, #8
+  
+  b triangleFill_done
+
+triangleFill_done:
+  pop {r4-r12,lr}
+  bx lr
+
+triangleFillFlatSide:
+  @ r0 = x1
+  @ r1 = y1
+  @ r2 = x2
+  @ r3 = y2
+  @ sp = x3
+  @ sp = y3
+  
   push {r4-r12}
   
   subs r4, r2, r0   @ dx1 = x2-x1
@@ -235,7 +362,7 @@ triangleFill:
   mov r2, r0
   mov r3, r1
   
-triangleFill_loop:
+triangleFillFlatSide_loop:
   push {r0-r3,lr}
   bl line
   pop {r0-r3,lr}
@@ -247,26 +374,18 @@ triangleFill_loop:
   ldr r8, [sp, #40]  @ e1
   ldr r10, [sp, #44] @ changed1
   
-  push {r0-r12,lr}
-  mov r4, r5
-  ldr r6, =format_a
-  ldr r0, [r6]
-  mov r1, r4
-  bl printf
-  pop {r0-r12,lr}
-  
   cmp r8, #0
-  blt triangleFill_while_e1_done
+  blt triangleFillFlatSide_while_e1_done
 
-triangleFill_while_e1:
+triangleFillFlatSide_while_e1:
   cmp r10, #1
   addeq r0, r0, r6   @ x1 += sx1
   addne r1, r1, r7   @ y1 += sy1
   sub r8, r8, r4     @ e1 -= dx1
   subs r8, r8, r4    @ e1 -= 2*dx1
-  bge triangleFill_while_e1
+  bge triangleFillFlatSide_while_e1
 
-triangleFill_while_e1_done:
+triangleFillFlatSide_while_e1_done:
   cmp r10, #1
   addeq r1, r1, r7  @ y1 += sy1
   addne r0, r0, r6  @ x1 += sx1
@@ -276,7 +395,7 @@ triangleFill_while_e1_done:
   str r8, [sp, #40]
 
   cmp r3, r1
-  beq triangleFill_while_yy_done
+  beq triangleFillFlatSide_while_yy_done
 
   ldr r4, [sp, #0]  @ dx2
   ldr r5, [sp, #4]  @ dy2
@@ -285,19 +404,19 @@ triangleFill_while_e1_done:
   ldr r8, [sp, #16]  @ e2
   ldr r10, [sp, #20] @ changed2
 
-triangleFill_while_yy:
+triangleFillFlatSide_while_yy:
   cmp r8, #0
-  blt triangleFill_while_e2_done
+  blt triangleFillFlatSide_while_e2_done
 
-triangleFill_while_e2:
+triangleFillFlatSide_while_e2:
   cmp r10, #1
   addeq r2, r2, r6   @ x2 += sx2
   addne r3, r3, r7   @ y2 += sy2
   sub r8, r8, r4     @ e2 -= dx2
   subs r8, r8, r4    @ e2 -= 2*dx2
-  bge triangleFill_while_e2
+  bge triangleFillFlatSide_while_e2
 
-triangleFill_while_e2_done:
+triangleFillFlatSide_while_e2_done:
   cmp r10, #1
   addeq r3, r3, r7   @ y2 += sy2
   addne r2, r2, r6   @ x2 += sx2
@@ -307,13 +426,13 @@ triangleFill_while_e2_done:
   str r8, [sp, #16]
   
   cmp r3, r1
-  bne triangleFill_while_yy
+  bne triangleFillFlatSide_while_yy
 
-triangleFill_while_yy_done:  
+triangleFillFlatSide_while_yy_done:  
   subs r12, r12, #1       @ i--
-  bge triangleFill_loop   @ i >= 0
+  bge triangleFillFlatSide_loop   @ i >= 0
   
-triangleFill_done:
+triangleFillFlatSide_done:
   pop {r4-r8,r10}
   pop {r4-r8,r10}
   
@@ -398,8 +517,32 @@ circle_loop:
   pop {r4-r7,r8,r10}
   bx lr
 
+division:
+ cmp r2, #0
+ beq division_end
+
+ mov r0, #0 
+ mov r3, #1 
+                
+division_start:
+ cmp r2, r1
+ MOVLS R2,R2,LSL#1
+ MOVLS R3,R3,LSL#1
+ bls division_start
+
+division_next:
+ CMP       R1,R2     
+ SUBCS     R1,R1,R2  
+ ADDCS     R0,R0,R3  
+ MOVS      R3,R3,LSR#1    
+ MOVCC     R2,R2,LSR#1    
+ BCC       division_next  
+
+division_end:
+ bx lr
+
 .data
-format: .asciz "%d\n"
+format: .asciz "%d %d\n"
 format_a: .word format
 
 
