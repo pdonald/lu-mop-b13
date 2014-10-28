@@ -1,9 +1,7 @@
 CC = arm-linux-gnueabi-gcc
-CFLAGS = -g -O3 -Wall -static -std=c99
+CFLAGS = -O3 -Wall -static -std=c99
 
-QEMU = qemu-arm-static
-
-.PHONY: all clean test
+.PHONY: all clean
 	
 all: agra
 

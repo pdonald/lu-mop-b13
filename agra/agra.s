@@ -23,9 +23,9 @@ getPixelAddr:
   @ r0 = x
   @ r1 = y
   
-  cmp r0, r0                @ x
+  cmp r0, #0                @ x
   blt getPixelAddr_oob      @ x < 0
-  cmp r1, r1                @ y
+  cmp r1, #0                @ y
   blt getPixelAddr_oob      @ y < 0
   
   push {r4-r6}
@@ -360,8 +360,6 @@ triangleFillFlatSide_loop:
   ldr r8, [sp, #40]  @ e1
   ldr r10, [sp, #44] @ changed1
   
-  
-  
   cmp r8, #0
   blt triangleFillFlatSide_while_e1_done
 
@@ -375,8 +373,8 @@ triangleFillFlatSide_while_e1:
 
 triangleFillFlatSide_while_e1_done:
   cmp r10, #1
-  addeq r1, r1, r7  @ y1 += sy1
-  addne r0, r0, r6  @ x1 += sx1
+  addeq r1, r1, r7   @ y1 += sy1
+  addne r0, r0, r6   @ x1 += sx1
   
   add r8, r8, r5     @ e1 += dy1
   add r8, r8, r5     @ e1 += 2*dy1

@@ -3,14 +3,34 @@
 
 #include "agra.h"
 
+#define COLOR_BLACK      " "
+#define COLOR_WHITE      "*"
+#define COLOR_RED        "R"
+#define COLOR_GREEN      "G"
+#define COLOR_BLUE       "B"
+#define COLOR_GREEN_BLUE "C"
+#define COLOR_RED_BLUE   "M"
+#define COLOR_GREEN_RED  "Y"
+#define COLOR_GRAY       "*"
+
+#define COLOR_DEPTH 0x3ff // visi biti ir 1, sakrît ar pixcolor_t.r un g un b lielumu
+
 pixcolor_t *frameBuffer = NULL;
+int frameBufferWidth = 0;
+int frameBufferHeight = 0;
+
+void FrameBufferSetSize(int width, int height) {
+    frameBuffer = NULL;
+    frameBufferWidth = width;
+    frameBufferHeight = height;
+}
 
 int FrameBufferGetWidth() {
-    return FRAME_WIDTH;
+    return frameBufferWidth;
 }
 
 int FrameBufferGetHeight() {
-    return FRAME_HEIGHT;
+    return frameBufferHeight;
 }
 
 void FrameBufferInit() {
