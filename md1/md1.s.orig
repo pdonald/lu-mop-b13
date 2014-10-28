@@ -1,0 +1,32 @@
+@ http://estudijas.lu.lv/mod/resource/view.php?id=124331 (fib piemērs)
+@ http://en.wikipedia.org/wiki/Arithmetic_progression
+@ http://blogs.arm.com/software-enablement/273-detecting-overflow-from-mul/
+
+.text
+.align   2
+.global  ap_sum
+.type    ap_sum, %function
+
+ap_sum:
+  @ n atrodas r0
+  @ rezultāts arī būs r0
+  
+  @ r1 būs n+1
+  adds r1, r0, #1      
+  bcs overflow
+  
+  @ r0 būs n(n+1)
+  umull r0, ip, r1, r0    
+  cmp ip, #0
+  bne overflow
+  
+  @ r0 būs n(n+1)/2
+  lsrvc r0, #1
+  
+  bx lr
+
+overflow:
+  mov r0, #0
+  bx lr
+
+.size ap_sum, .-ap_sum
