@@ -5,6 +5,9 @@ CFLAGS = -O3 -Wall -static -std=c99
 	
 all: agra
 
+test: all
+	qemu-arm-static agra
+
 agra: agra.o agra_main.o framebuffer.o
 	$(CC) $(CFLAGS) -o $@ $^
 
